@@ -1,0 +1,21 @@
+version: '3.4'
+
+services:
+  web:
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+    ports:
+      - "8000:8000"
+    volumes:
+      # - node_modules:/usr/src/node_modules
+      - history:/root/history
+      - .:/usr/src
+    environment:
+      - NODE_ENV=development
+      - HISTFILE=/root/history/.bash_history
+    command: npm run develop
+
+volumes:
+  # node_modules:
+  history:
