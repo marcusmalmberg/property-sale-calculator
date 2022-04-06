@@ -16,9 +16,16 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@emotion/react": "^11.8.2",
+    "@emotion/styled": "^11.8.1",
+    "@mui/icons-material": "^5.5.1",
+    "@mui/material": "^5.5.3",
     "gatsby": "^4.11.1",
+    "gatsby-plugin-material-ui": "next",
+    "gatsby-plugin-react-helmet": "^5.11.0",
     "react": "^17.0.1",
-    "react-dom": "^17.0.1"
+    "react-dom": "^17.0.1",
+    "react-helmet": "^6.1.0"
   },
   "devDependencies": {
     "@types/node": "^17.0.23",

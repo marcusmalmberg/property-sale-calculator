@@ -1,29 +1,34 @@
 import React from "react"
 
+import Table from '@mui/material/Table';
+import TableBody from '@mui/material/TableBody';
+import TableCell from '@mui/material/TableCell';
+import TableHead from '@mui/material/TableHead';
+import TableRow from '@mui/material/TableRow';
+
 import * as styles from "./ResultTable.module.scss"
 
-const ResultTable : React.FC = ({ tableData }: any): any => {
+const ResultTable: React.FC = ({ headerRow, tableData }: any): any => {
 
-  const headerRow = ["A", "B", "C"]
   return (
-    <table>
-      <thead>
-        <tr>
+    <Table>
+      <TableHead>
+        <TableRow>
           {headerRow.map((header, i) =>
-            <th key={i}>{header}</th>
+            <TableCell key={i}>{header}</TableCell>
           )}
-        </tr>
-      </thead>
-      <tbody>
+        </TableRow>
+      </TableHead>
+      <TableBody>
         {tableData?.map((row: any[], i: number) => {
-          return <tr key={i}>
+          return <TableRow key={i}>
             {row.map((column: any, j: number) => {
-              return <td key={j}>{column}</td>
+              return <TableCell key={j}>{column}</TableCell>
             })}
-          </tr>
+          </TableRow>
         })}
-      </tbody>
-    </table>
+      </TableBody>
+    </Table>
   )
 }
 
