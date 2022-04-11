@@ -3,7 +3,7 @@ import Paper from '@mui/material/Paper'
 
 import Title from '../Title'
 
-const Debug: any = (settings: any) => {
+const Debug: any = ({settings}: any) => {
 
   return (
     <>

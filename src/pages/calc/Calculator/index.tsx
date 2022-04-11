@@ -1,5 +1,4 @@
-import React, { useState, useReducer } from "react"
-import TextField from '@mui/material/TextField'
+import React, { useReducer } from "react"
 import Paper from '@mui/material/Paper'
 import Grid from '@mui/material/Grid'
 
@@ -7,9 +6,9 @@ import Title from '../Title'
 import { calculateProfit } from "../utils/calculator"
 import Settings from "./Settings"
 import ResultTableVertical from "../ResultTableVertical"
-import ResultTable from "../ResultTable"
 import Container from "@mui/material/Container"
 import Debug from "./Debug"
+import Typography from "@mui/material/Typography"
 
 const Item = ({ children }) => {
   return <div>{children}</div>
@@ -19,16 +18,18 @@ const settingsConfiguration = [
   {
     title: 'Stort',
     fields: [
-      { name: 'Beräknad köp', key: 'buyPrice' },
-      { name: 'Beräknad sälj', key: 'sellPrice' },
       { name: 'Köptes för', key: 'boughtPrice' },
+      { name: 'Beräknad sälj', key: 'sellPrice' },
+      { name: 'Beräknad köp', key: 'buyPrice' },
     ]
   },
   {
     title: 'Sen',
     fields: [
       { name: 'Arvode', key: 'commission' },
-      { name: 'Kvar på lån', key: 'loanRemaining' },
+      { name: 'Förbättringsutgifter', key: 'improvementCosts' },
+      { name: 'Lån på nuvarande bostad', key: 'loanRemaining' },
+      { name: 'Extra kontanter', key: 'extraCash' },
       { name: 'Uppskov', type: 'switch', key: 'deferredTaxes', defaultValue: true },
     ]
   },
@@ -62,18 +63,25 @@ const Calculator: any = (props: any) => {
     initialSettings
   );
 
-  const headerRow = [
-    "Foo",
-    "Bar",
-    "Baz",
-  ]
-  const tableData = [
-    ["1", "A", "!"],
-    ["1", "B", "!"],
-    ["1", "C", "!"],
-    ["1", "D", "!"],
-    ["1", "E", "!"],
-  ]
+  let calculations = {}
+  let salesCalculations = {}
+  salesCalculations.profit = calculateProfit({ boughtPrice: settings.boughtPrice, sellPrice: settings.sellPrice })
+  salesCalculations.adjustedProfit = salesCalculations.profit - settings.improvementCosts - settings.commission
+  salesCalculations.taxes = Math.round(salesCalculations.adjustedProfit * 22 / 30 * 0.3)
+  salesCalculations.remainingAfterTaxes = salesCalculations.adjustedProfit - (settings.deferredTaxes ? 0 : salesCalculations.taxes)
+  salesCalculations.paidOnCurrentProperty = settings.boughtPrice - settings.loanRemaining
+  calculations.salesCalculations = salesCalculations
+
+  let buyCalculations = {}
+  buyCalculations.availableAfterSale = salesCalculations.remainingAfterTaxes + salesCalculations.paidOnCurrentProperty
+  buyCalculations.deposit = Math.round(settings.buyPrice * 0.15)
+  buyCalculations.neededAfterSale = settings.buyPrice - buyCalculations.availableAfterSale
+  buyCalculations.deedCost = settings.propertyType === "Villa" ? settings.buyPrice * 0.015 + 875 : 0
+  buyCalculations.needToLoan = buyCalculations.neededAfterSale - buyCalculations.deposit - settings.extraCash
+  buyCalculations.mortageBondCost = settings.propertyType === "Villa" ? Math.max((buyCalculations.needToLoan - settings.mortageBond) * 0.02, 0) : 0
+  buyCalculations.cashInput = buyCalculations.deposit + buyCalculations.deedCost + buyCalculations.mortageBondCost
+  buyCalculations.minimumExtraCash = Math.max(buyCalculations.cashInput - buyCalculations.availableAfterSale, 0)
+  calculations.buyCalculations = buyCalculations
 
   return (
     <div style={{ backgroundColor: "#f5f5f5", minHeight: '100vh' }}>
@@ -86,22 +94,12 @@ const Calculator: any = (props: any) => {
             </Item>
           </Grid>
           <Grid item xs={8}>
+
             <Grid item xs={12}>
-
               <Item>
-                <Title>Skatter</Title>
+                <Title>Pengar från försäljningar</Title>
                 <Paper sx={{ p: 2 }}>
-                  <ResultTableVertical headerRow={[
-                    "Beräknad vinst",
-                    "Beräknad skatt",
-                    "Avdrag renovering",
-                  ]} tableData={[[
-                    1300000,
-                    286000,
-                    20000,
-                  ]]} />
-                  <ResultTable tableData={tableData} headerRow={headerRow} />
-
+                  <ResultTableVertical headerRow={["Försäljningsvinst", "Vinst efter avdrag", "Skatt", "Kvar efter skatt", "Betalat på bostaden", ""]} tableData={[[salesCalculations.profit, salesCalculations.adjustedProfit, salesCalculations.taxes, salesCalculations.remainingAfterTaxes, salesCalculations.paidOnCurrentProperty, <Typography>{buyCalculations.availableAfterSale}</Typography>]]} />
                 </Paper>
               </Item>
             </Grid>
@@ -109,7 +107,17 @@ const Calculator: any = (props: any) => {
             <Grid item xs={12}>
               <Item>
                 <br />
-                <Debug settings={settings} />
+                <Title>Behov köp</Title>
+                <Paper sx={{ p: 2 }}>
+                  <ResultTableVertical headerRow={["Tillgängligt efter försäljning", "Handpenning (15%)", "Behöver skjuta till / låna efter försäljning", "Lagfart (1.5% + 875 kr)", "Kommer låna", "Pantbrev (2% av nylån)", "Behov kontanter (handpenning + lagfart + pantbrev)", "Minst extra kontanter att skjuta till utöver försäljningsvinst"]} tableData={[[buyCalculations.availableAfterSale, buyCalculations.deposit, buyCalculations.neededAfterSale, buyCalculations.deedCost, buyCalculations.needToLoan, buyCalculations.mortageBondCost, buyCalculations.cashInput, buyCalculations.minimumExtraCash]]} />
+                </Paper>
+              </Item>
+            </Grid>
+
+            <Grid item xs={12}>
+              <Item>
+                <br />
+                <Debug settings={{settings, calculations}} />
               </Item>
             </Grid>
           </Grid>
