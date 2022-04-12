@@ -16,7 +16,7 @@ const Item = ({ children }) => {
 
 const settingsConfiguration = [
   {
-    title: 'Stort',
+    title: 'Köp & Sälj',
     fields: [
       { name: 'Köptes för', key: 'boughtPrice' },
       { name: 'Beräknad sälj', key: 'sellPrice' },
@@ -24,7 +24,7 @@ const settingsConfiguration = [
     ]
   },
   {
-    title: 'Sen',
+    title: 'Ekonomi',
     fields: [
       { name: 'Arvode', key: 'commission' },
       { name: 'Förbättringsutgifter', key: 'improvementCosts' },
@@ -77,8 +77,8 @@ const Calculator: any = (props: any) => {
   buyCalculations.deposit = Math.round(settings.buyPrice * 0.15)
   buyCalculations.neededAfterSale = settings.buyPrice - buyCalculations.availableAfterSale
   buyCalculations.deedCost = settings.propertyType === "Villa" ? settings.buyPrice * 0.015 + 875 : 0
-  buyCalculations.needToLoan = buyCalculations.neededAfterSale - buyCalculations.deposit - settings.extraCash
-  buyCalculations.mortageBondCost = settings.propertyType === "Villa" ? Math.max((buyCalculations.needToLoan - settings.mortageBond) * 0.02, 0) : 0
+  buyCalculations.needToLoan = buyCalculations.neededAfterSale - settings.extraCash
+  buyCalculations.mortageBondCost = settings.propertyType === "Villa" ? Math.max(Math.round((buyCalculations.needToLoan - settings.mortageBond) * 0.02), 0) : 0
   buyCalculations.cashInput = buyCalculations.deposit + buyCalculations.deedCost + buyCalculations.mortageBondCost
   buyCalculations.minimumExtraCash = Math.max(buyCalculations.cashInput - buyCalculations.availableAfterSale, 0)
   calculations.buyCalculations = buyCalculations
@@ -97,6 +97,16 @@ const Calculator: any = (props: any) => {
 
             <Grid item xs={12}>
               <Item>
+                <Title>Sammanfattning</Title>
+                <Paper sx={{ p: 2 }}>
+                  <ResultTableVertical headerRow={["Tillgängligt efter försäljning", "Extra kontanter att skjuta till (utöver vinst)", "Kommer låna"]} tableData={[[buyCalculations.availableAfterSale, buyCalculations.minimumExtraCash, buyCalculations.needToLoan]]} />
+                </Paper>
+              </Item>
+            </Grid>
+
+            <Grid item xs={12}>
+              <Item>
+                <br />
                 <Title>Pengar från försäljningar</Title>
                 <Paper sx={{ p: 2 }}>
                   <ResultTableVertical headerRow={["Försäljningsvinst", "Vinst efter avdrag", "Skatt", "Kvar efter skatt", "Betalat på bostaden", ""]} tableData={[[salesCalculations.profit, salesCalculations.adjustedProfit, salesCalculations.taxes, salesCalculations.remainingAfterTaxes, salesCalculations.paidOnCurrentProperty, <Typography>{buyCalculations.availableAfterSale}</Typography>]]} />
