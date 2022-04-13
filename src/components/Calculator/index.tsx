@@ -1,14 +1,16 @@
-import React, { useReducer } from "react"
+import React, { useEffect, useReducer, useState } from "react"
 import Paper from '@mui/material/Paper'
 import Grid from '@mui/material/Grid'
 
 import Title from '../Title'
-import { calculateProfit } from "../utils/calculator"
 import Settings from "./Settings"
 import ResultTableVertical from "../ResultTableVertical"
 import Container from "@mui/material/Container"
 import Debug from "./Debug"
 import Typography from "@mui/material/Typography"
+import Button from "@mui/material/Button"
+import Box from "@mui/material/Box"
+import TextField from "@mui/material/TextField"
 
 const Item = ({ children }) => {
   return <div>{children}</div>
@@ -54,7 +56,8 @@ const settingsConfiguration = [
 
 const Calculator: any = (props: any) => {
   const initialSettings = Object.assign({}, ...settingsConfiguration.map((section) => section.fields.map(field => ({ [field.key]: (typeof (field.defaultValue) !== "undefined" ? field.defaultValue : null) }))).flat())
-
+  const [saves, setSaves] = useState(null)
+  const [saveName, setSaveName] = useState(null)
   const [settings, updateSetting] = useReducer(
     (state: any, updates: any) => ({
       ...state,
@@ -63,9 +66,14 @@ const Calculator: any = (props: any) => {
     initialSettings
   );
 
+  useEffect(() => {
+    const storedSaves = JSON.parse(localStorage.getItem('saves') ?? JSON.stringify({}))
+    console.log(storedSaves)
+  }, [])
+
   let calculations = {}
   let salesCalculations = {}
-  salesCalculations.profit = calculateProfit({ boughtPrice: settings.boughtPrice, sellPrice: settings.sellPrice })
+  salesCalculations.profit =  settings.sellPrice - settings.boughtPrice
   salesCalculations.adjustedProfit = salesCalculations.profit - settings.improvementCosts - settings.commission
   salesCalculations.taxes = Math.round(salesCalculations.adjustedProfit * 22 / 30 * 0.3)
   salesCalculations.remainingAfterTaxes = salesCalculations.adjustedProfit - (settings.deferredTaxes ? 0 : salesCalculations.taxes)
@@ -89,10 +97,14 @@ const Calculator: any = (props: any) => {
         <br />
         <Grid container spacing={2}>
           <Grid item xs={4}>
-            <Item>
-              <Settings settingsConfiguration={settingsConfiguration} settings={settings} updateState={(field: String, newValue: any) => updateSetting({ [field]: newValue })} reset={() => updateSetting(initialSettings)} />
-            </Item>
+            <Grid item xs={12}>
+              <Item>
+                <Settings settingsConfiguration={settingsConfiguration} settings={settings} updateState={(field: String, newValue: any) => updateSetting({ [field]: newValue })} reset={() => updateSetting(initialSettings)} />
+              </Item>
+            </Grid>
           </Grid>
+
+
           <Grid item xs={8}>
 
             <Grid item xs={12}>
