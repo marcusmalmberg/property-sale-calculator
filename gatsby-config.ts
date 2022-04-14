@@ -2,8 +2,9 @@ import type { GatsbyConfig } from "gatsby"
 
 const config: GatsbyConfig = {
   siteMetadata: {
-    siteUrl: `https://www.yourdomain.tld`,
+    siteUrl: `https://marcusmalmberg.github.io/property-sale-calculator`,
   },
+  pathPrefix: "/property-sale-calculator",
   plugins: [
     `gatsby-plugin-postcss`,
     `gatsby-plugin-sass`,
