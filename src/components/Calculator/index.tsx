@@ -1,16 +1,14 @@
-import React, { useEffect, useReducer, useState } from "react"
+import React, { useReducer } from "react"
 import Paper from '@mui/material/Paper'
 import Grid from '@mui/material/Grid'
+import Typography from "@mui/material/Typography"
+import Container from "@mui/material/Container"
 
 import Title from '../Title'
 import Settings from "./Settings"
 import ResultTableVertical from "../ResultTableVertical"
-import Container from "@mui/material/Container"
 import Debug from "./Debug"
-import Typography from "@mui/material/Typography"
-import Button from "@mui/material/Button"
-import Box from "@mui/material/Box"
-import TextField from "@mui/material/TextField"
+import Saves from "./Saves"
 
 const Item = ({ children }) => {
   return <div>{children}</div>
@@ -56,8 +54,6 @@ const settingsConfiguration = [
 
 const Calculator: any = (props: any) => {
   const initialSettings = Object.assign({}, ...settingsConfiguration.map((section) => section.fields.map(field => ({ [field.key]: (typeof (field.defaultValue) !== "undefined" ? field.defaultValue : null) }))).flat())
-  const [saves, setSaves] = useState(null)
-  const [saveName, setSaveName] = useState(null)
   const [settings, updateSetting] = useReducer(
     (state: any, updates: any) => ({
       ...state,
@@ -65,11 +61,6 @@ const Calculator: any = (props: any) => {
     }),
     initialSettings
   );
-
-  useEffect(() => {
-    const storedSaves = JSON.parse(localStorage.getItem('saves') ?? JSON.stringify({}))
-    console.log(storedSaves)
-  }, [])
 
   let calculations = {}
   let salesCalculations = {}
@@ -100,6 +91,12 @@ const Calculator: any = (props: any) => {
             <Grid item xs={12}>
               <Item>
                 <Settings settingsConfiguration={settingsConfiguration} settings={settings} updateState={(field: String, newValue: any) => updateSetting({ [field]: newValue })} reset={() => updateSetting(initialSettings)} />
+              </Item>
+            </Grid>
+            <Grid item xs={12}>
+              <Item>
+                <br />
+                <Saves settings={settings} loadSettings={updateSetting} />
               </Item>
             </Grid>
           </Grid>
