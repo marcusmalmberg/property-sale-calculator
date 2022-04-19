@@ -10,11 +10,24 @@ import ResultTableVertical from "../ResultTableVertical"
 import Debug from "./Debug"
 import Saves from "./Saves"
 
-const Item = ({ children }) => {
+const Item = ({ children }: { children: any }): JSX.Element => {
   return <div>{children}</div>
 }
 
-const settingsConfiguration = [
+interface SettingField {
+  name: string
+  key: string
+  defaultValue?: any
+  type?: string
+  options?: string[]
+}
+
+interface SettingsSection {
+  title: string
+  fields: SettingField[]
+}
+
+const settingsConfiguration: SettingsSection[] = [
   {
     title: 'Köp & Sälj',
     fields: [
@@ -52,7 +65,32 @@ const settingsConfiguration = [
   },
 ]
 
-const Calculator: any = (props: any) => {
+interface SalesCalculations {
+  paidOnCurrentProperty?: number
+  salesCalculations?: number
+  remainingAfterTaxes?: number
+  taxes?: number
+  profit?: number
+  adjustedProfit?: number
+}
+
+interface BuyCalculations {
+  availableAfterSale: number
+  deposit: number
+  neededAfterSale: number
+  deedCost: number
+  needToLoan: number
+  mortageBondCost: number
+  cashInput: number
+  minimumExtraCash: number
+}
+
+interface Calculations {
+  salesCalculations: SalesCalculations
+  buyCalculations: BuyCalculations
+}
+
+const Calculator = (): JSX.Element => {
   const initialSettings = Object.assign({}, ...settingsConfiguration.map((section) => section.fields.map(field => ({ [field.key]: (typeof (field.defaultValue) !== "undefined" ? field.defaultValue : null) }))).flat())
   const [settings, updateSetting] = useReducer(
     (state: any, updates: any) => ({
@@ -62,16 +100,14 @@ const Calculator: any = (props: any) => {
     initialSettings
   );
 
-  let calculations = {}
   let salesCalculations = {}
-  salesCalculations.profit =  settings.sellPrice - settings.boughtPrice
+  salesCalculations.profit = settings.sellPrice - settings.boughtPrice
   salesCalculations.adjustedProfit = salesCalculations.profit - settings.improvementCosts - settings.commission
   salesCalculations.taxes = Math.round(salesCalculations.adjustedProfit * 22 / 30 * 0.3)
   salesCalculations.remainingAfterTaxes = salesCalculations.adjustedProfit - (settings.deferredTaxes ? 0 : salesCalculations.taxes)
   salesCalculations.paidOnCurrentProperty = settings.boughtPrice - settings.loanRemaining
-  calculations.salesCalculations = salesCalculations
 
-  let buyCalculations = {}
+  let buyCalculations = {} as BuyCalculations
   buyCalculations.availableAfterSale = salesCalculations.remainingAfterTaxes + salesCalculations.paidOnCurrentProperty
   buyCalculations.deposit = Math.round(settings.buyPrice * 0.15)
   buyCalculations.neededAfterSale = settings.buyPrice - buyCalculations.availableAfterSale
@@ -80,7 +116,11 @@ const Calculator: any = (props: any) => {
   buyCalculations.mortageBondCost = settings.propertyType === "Villa" ? Math.max(Math.round((buyCalculations.needToLoan - settings.mortageBond) * 0.02), 0) : 0
   buyCalculations.cashInput = buyCalculations.deposit + buyCalculations.deedCost + buyCalculations.mortageBondCost
   buyCalculations.minimumExtraCash = Math.max(buyCalculations.cashInput - buyCalculations.availableAfterSale, 0)
-  calculations.buyCalculations = buyCalculations
+
+  let calculations: Calculations = {
+    salesCalculations,
+    buyCalculations
+  }
 
   return (
     <div style={{ backgroundColor: "#f5f5f5", minHeight: '100vh' }}>
@@ -136,14 +176,14 @@ const Calculator: any = (props: any) => {
             <Grid item xs={12}>
               <Item>
                 <br />
-                <Debug settings={{settings, calculations}} />
+                <Debug settings={{ settings, calculations }} />
               </Item>
             </Grid>
           </Grid>
         </Grid>
         <br />
       </Container>
-    </div>
+    </div >
   )
 }
 
