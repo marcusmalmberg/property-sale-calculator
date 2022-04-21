@@ -29,35 +29,38 @@ interface SettingsSection {
 
 const settingsConfiguration: SettingsSection[] = [
   {
-    title: 'Köp & Sälj',
+    title: 'Nuvarande bostad',
     fields: [
       { name: 'Köptes för', key: 'boughtPrice' },
       { name: 'Beräknad sälj', key: 'sellPrice' },
+      { name: 'Lån på nuvarande bostad', key: 'loanRemaining' },
+      { name: 'Arvode', key: 'commission' },
+      { name: 'Förbättringsutgifter', key: 'improvementCosts' },
+      { name: 'Uppskov', type: 'switch', key: 'deferredTaxes', defaultValue: true },
+    ]
+  },
+  {
+    title: 'Nya bostaden',
+    fields: [
+      { name: 'Bostadstyp', type: 'toggleButton', options: ['Villa', 'Bostadsrätt'], defaultValue: 'Villa', key: 'propertyType' },
       { name: 'Beräknad köp', key: 'buyPrice' },
+      { name: 'Extra kontanter', key: 'extraCash' },
+      { name: 'Pantbrev sedan tidigare', key: 'mortageBond' },
     ]
   },
   {
     title: 'Ekonomi',
     fields: [
-      { name: 'Arvode', key: 'commission' },
-      { name: 'Förbättringsutgifter', key: 'improvementCosts' },
-      { name: 'Lån på nuvarande bostad', key: 'loanRemaining' },
-      { name: 'Extra kontanter', key: 'extraCash' },
-      { name: 'Uppskov', type: 'switch', key: 'deferredTaxes', defaultValue: true },
+      { name: 'Amortering (%)', key: 'amortizement' },
+      { name: 'Ränta på första 2 miljonerna (%)', key: 'interest1' },
+      { name: 'Ränta på resten (%)', key: 'interest2' },
     ]
   },
   {
-    title: 'Bostaden',
+    title: 'Detaljer nya bostaden',
     fields: [
-      { name: 'Bostadstyp', type: 'toggleButton', options: ['Villa', 'Bostadsrätt'], defaultValue: 'Villa', key: 'propertyType' },
-      { name: 'Pantbrev sedan tidigare', key: 'mortageBond' },
       { name: 'Storlek', key: 'livingArea', defaultValue: null },
-    ]
-  },
-  {
-    title: 'Kostnader',
-    fields: [
-      { name: 'Hyra', key: 'costRent' },
+      { name: 'Hyra/Avgift', key: 'costRent' },
       { name: 'Försäkring', key: 'costInsurance' },
       { name: 'El', key: 'costElectricity' },
       { name: 'Övrigt', key: 'costOther' },
