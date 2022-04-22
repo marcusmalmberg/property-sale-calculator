@@ -51,6 +51,7 @@ const settingsConfiguration: SettingsSection[] = [
   {
     title: 'Ekonomi',
     fields: [
+      { name: 'Storlek handpenning (minst 15%)', defaultValue: '15', key: 'depositPercentage' },
       { name: 'Amortering (%)', key: 'amortizement' },
       { name: 'Ränta på första 2 miljonerna (%)', key: 'interest1' },
       { name: 'Ränta på resten (%)', key: 'interest2' },
@@ -136,7 +137,7 @@ const Calculator = (): JSX.Element => {
 
   let buyCalculations = {} as BuyCalculations
   buyCalculations.availableAfterSale = salesCalculations.remainingAfterTaxes + salesCalculations.paidOnCurrentProperty
-  buyCalculations.deposit = Math.round(settings.buyPrice * 0.15)
+  buyCalculations.deposit = Math.round(settings.buyPrice * (settings.depositPercentage ?? 15) / 100.0)
   buyCalculations.neededAfterSale = settings.buyPrice - buyCalculations.availableAfterSale
   buyCalculations.deedCost = settings.propertyType === "Villa" ? settings.buyPrice * 0.015 + 875 : 0
   buyCalculations.needToLoan = buyCalculations.neededAfterSale - settings.extraCash
@@ -200,7 +201,7 @@ const Calculator = (): JSX.Element => {
                 <Paper sx={{ p: 2 }}>
                   <ResultTableVertical headerRow={[
                     "Tillgängligt efter försäljning",
-                    "Kommer låna",
+                    "Behöver minst låna",
                     "Extra kontanter att skjuta till (utöver vinst)",
                     "Utgifter per månad",
                   ]} tableData={[[
@@ -244,10 +245,11 @@ const Calculator = (): JSX.Element => {
                 <Paper sx={{ p: 2 }}>
                   <ResultTableVertical headerRow={[
                     "Tillgängligt efter försäljning",
-                    "Handpenning (15%)",
+                    `Handpenning (${Math.round(settings.depositPercentage ?? 15)}%)`,
                     "Behöver skjuta till / låna efter försäljning",
                     "Lagfart (1.5% + 875 kr)",
-                    "Kommer låna", "Pantbrev (2% av nylån)",
+                    "Behöver minst låna",
+                    "Pantbrev (2% av nylån)",
                     "Behov kontanter (handpenning + lagfart + pantbrev)",
                     "Minst extra kontanter att skjuta till utöver försäljningsvinst",
                   ]} tableData={[[
