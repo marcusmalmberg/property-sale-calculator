@@ -18,7 +18,7 @@ interface SettingField {
   name: string
   key: string
   defaultValue?: any
-  type?: string
+  type?: "switch" | "select" | "toggleButton"
   options?: string[]
 }
 
@@ -88,9 +88,33 @@ interface BuyCalculations {
   minimumExtraCash: number
 }
 
+interface Expenses {
+  amortizement: number
+  interest: number
+  rent: number
+  insurance: number
+  electricity: number
+  other: number
+  totalLoanExpenses: number
+  totalMonthly: number
+}
+
 interface Calculations {
   salesCalculations: SalesCalculations
   buyCalculations: BuyCalculations
+  expenses: Expenses
+  currentExpenses: Expenses
+  expenseDifference: Expenses
+}
+
+const calculateExpenseDifference = (newExpenses: Expenses, oldExpenses: Expenses) => {
+  const diff = {} as Expenses
+  Object.keys(newExpenses).map(k => diff[k] = newExpenses[k] - oldExpenses[k])
+  return diff
+}
+
+const numberWithSign = (number: number) => {
+  return `${number < 0 ? '-' : '+'}${number}`
 }
 
 const Calculator = (): JSX.Element => {
@@ -103,7 +127,7 @@ const Calculator = (): JSX.Element => {
     initialSettings
   );
 
-  let salesCalculations = {}
+  let salesCalculations = {} as SalesCalculations
   salesCalculations.profit = settings.sellPrice - settings.boughtPrice
   salesCalculations.adjustedProfit = salesCalculations.profit - settings.improvementCosts - settings.commission
   salesCalculations.taxes = Math.round(salesCalculations.adjustedProfit * 22 / 30 * 0.3)
@@ -120,9 +144,33 @@ const Calculator = (): JSX.Element => {
   buyCalculations.cashInput = buyCalculations.deposit + buyCalculations.deedCost + buyCalculations.mortageBondCost
   buyCalculations.minimumExtraCash = Math.max(buyCalculations.cashInput - buyCalculations.availableAfterSale, 0)
 
+  let expenses = {} as Expenses
+  expenses.interest = Math.round((Math.min(buyCalculations.needToLoan, 2000000) * settings.interest1 / 100.0 + Math.max(buyCalculations.needToLoan - 2000000, 0) * settings.interest2 / 100.0) / 12)
+  expenses.amortizement = Math.round(buyCalculations.needToLoan * settings.amortizement / 100.0 / 12)
+  expenses.rent = settings.costRent * 1
+  expenses.insurance = settings.costInsurance * 1
+  expenses.electricity = settings.costElectricity * 1
+  expenses.other = settings.costOther * 1
+  expenses.totalLoanExpenses = expenses.interest + expenses.amortizement
+  expenses.totalMonthly = 1.0 + expenses.interest + expenses.amortizement + expenses.rent + expenses.insurance + expenses.electricity + expenses.other
+
+  let currentExpenses = {} as Expenses
+  currentExpenses.interest = Math.round((Math.min(settings.loanRemaining, 2000000) * settings.interest1 / 100.0 + Math.max(settings.loanRemaining - 2000000, 0) * settings.interest2 / 100.0) / 12)
+  currentExpenses.amortizement = Math.round(settings.loanRemaining * settings.amortizement / 100.0 / 12)
+  currentExpenses.rent = 0
+  currentExpenses.insurance = 0
+  currentExpenses.electricity = 0
+  currentExpenses.other = 0
+  currentExpenses.totalLoanExpenses = currentExpenses.interest + currentExpenses.amortizement
+  currentExpenses.totalMonthly = 1.0 + currentExpenses.interest + currentExpenses.amortizement + currentExpenses.rent + currentExpenses.insurance + currentExpenses.electricity + currentExpenses.other
+
+
   let calculations: Calculations = {
     salesCalculations,
-    buyCalculations
+    buyCalculations,
+    expenses,
+    currentExpenses,
+    expenseDifference: calculateExpenseDifference(expenses, currentExpenses)
   }
 
   return (
@@ -146,12 +194,21 @@ const Calculator = (): JSX.Element => {
 
 
           <Grid item xs={8}>
-
             <Grid item xs={12}>
               <Item>
                 <Title>Sammanfattning</Title>
                 <Paper sx={{ p: 2 }}>
-                  <ResultTableVertical headerRow={["Tillgängligt efter försäljning", "Extra kontanter att skjuta till (utöver vinst)", "Kommer låna"]} tableData={[[buyCalculations.availableAfterSale, buyCalculations.minimumExtraCash, buyCalculations.needToLoan]]} />
+                  <ResultTableVertical headerRow={[
+                    "Tillgängligt efter försäljning",
+                    "Kommer låna",
+                    "Extra kontanter att skjuta till (utöver vinst)",
+                    "Utgifter per månad",
+                  ]} tableData={[[
+                    buyCalculations.availableAfterSale,
+                    buyCalculations.needToLoan,
+                    buyCalculations.minimumExtraCash,
+                    `${expenses.totalMonthly} (${numberWithSign(calculations.expenseDifference.totalMonthly)})`,
+                  ]]} />
                 </Paper>
               </Item>
             </Grid>
@@ -161,7 +218,21 @@ const Calculator = (): JSX.Element => {
                 <br />
                 <Title>Pengar från försäljningar</Title>
                 <Paper sx={{ p: 2 }}>
-                  <ResultTableVertical headerRow={["Försäljningsvinst", "Vinst efter avdrag", "Skatt", "Kvar efter skatt", "Betalat på bostaden", ""]} tableData={[[salesCalculations.profit, salesCalculations.adjustedProfit, salesCalculations.taxes, salesCalculations.remainingAfterTaxes, salesCalculations.paidOnCurrentProperty, <Typography>{buyCalculations.availableAfterSale}</Typography>]]} />
+                  <ResultTableVertical headerRow={[
+                    "Försäljningsvinst",
+                    "Vinst efter avdrag",
+                    "Skatt",
+                    "Kvar efter skatt",
+                    "Betalat på bostaden",
+                    "",
+                  ]} tableData={[[
+                    salesCalculations.profit,
+                    salesCalculations.adjustedProfit,
+                    salesCalculations.taxes,
+                    salesCalculations.remainingAfterTaxes,
+                    salesCalculations.paidOnCurrentProperty,
+                    <Typography>{buyCalculations.availableAfterSale}</Typography>,
+                  ]]} />
                 </Paper>
               </Item>
             </Grid>
@@ -171,7 +242,72 @@ const Calculator = (): JSX.Element => {
                 <br />
                 <Title>Behov köp</Title>
                 <Paper sx={{ p: 2 }}>
-                  <ResultTableVertical headerRow={["Tillgängligt efter försäljning", "Handpenning (15%)", "Behöver skjuta till / låna efter försäljning", "Lagfart (1.5% + 875 kr)", "Kommer låna", "Pantbrev (2% av nylån)", "Behov kontanter (handpenning + lagfart + pantbrev)", "Minst extra kontanter att skjuta till utöver försäljningsvinst"]} tableData={[[buyCalculations.availableAfterSale, buyCalculations.deposit, buyCalculations.neededAfterSale, buyCalculations.deedCost, buyCalculations.needToLoan, buyCalculations.mortageBondCost, buyCalculations.cashInput, buyCalculations.minimumExtraCash]]} />
+                  <ResultTableVertical headerRow={[
+                    "Tillgängligt efter försäljning",
+                    "Handpenning (15%)",
+                    "Behöver skjuta till / låna efter försäljning",
+                    "Lagfart (1.5% + 875 kr)",
+                    "Kommer låna", "Pantbrev (2% av nylån)",
+                    "Behov kontanter (handpenning + lagfart + pantbrev)",
+                    "Minst extra kontanter att skjuta till utöver försäljningsvinst",
+                  ]} tableData={[[
+                    buyCalculations.availableAfterSale,
+                    buyCalculations.deposit,
+                    buyCalculations.neededAfterSale,
+                    buyCalculations.deedCost,
+                    buyCalculations.needToLoan,
+                    buyCalculations.mortageBondCost,
+                    buyCalculations.cashInput,
+                    buyCalculations.minimumExtraCash,
+                  ]]} />
+                </Paper>
+              </Item>
+            </Grid>
+
+            <Grid item xs={12}>
+              <Item>
+                <br />
+                <Title>Utgifter</Title>
+                <Paper sx={{ p: 2 }}>
+                  <ResultTableVertical headerRow={[
+                    "Amortering",
+                    "Ränta",
+                    "Hyra/Avgift",
+                    "Försäkring",
+                    "El",
+                    "Övrigt",
+                    "Totalt för lån per månad",
+                    "Totalt per månad",
+                  ]} tableData={[
+                    [
+                      expenses.amortizement,
+                      expenses.interest,
+                      expenses.rent,
+                      expenses.insurance,
+                      expenses.electricity,
+                      expenses.other,
+                      expenses.totalLoanExpenses,
+                      expenses.totalMonthly,
+                    ], [
+                      currentExpenses.amortizement,
+                      currentExpenses.interest,
+                      currentExpenses.rent,
+                      currentExpenses.insurance,
+                      currentExpenses.electricity,
+                      currentExpenses.other,
+                      currentExpenses.totalLoanExpenses,
+                      currentExpenses.totalMonthly,
+                    ], [
+                      numberWithSign(calculations.expenseDifference.amortizement),
+                      numberWithSign(calculations.expenseDifference.interest),
+                      numberWithSign(calculations.expenseDifference.rent),
+                      numberWithSign(calculations.expenseDifference.insurance),
+                      numberWithSign(calculations.expenseDifference.electricity),
+                      numberWithSign(calculations.expenseDifference.other),
+                      numberWithSign(calculations.expenseDifference.totalLoanExpenses),
+                      numberWithSign(calculations.expenseDifference.totalMonthly),
+                    ]
+                  ]} />
                 </Paper>
               </Item>
             </Grid>
