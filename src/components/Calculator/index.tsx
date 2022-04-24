@@ -44,14 +44,13 @@ const settingsConfiguration: SettingsSection[] = [
     fields: [
       { name: 'Bostadstyp', type: 'toggleButton', options: ['Villa', 'Bostadsrätt'], defaultValue: 'Villa', key: 'propertyType' },
       { name: 'Beräknad köp', key: 'buyPrice' },
-      { name: 'Extra kontanter', key: 'extraCash' },
       { name: 'Pantbrev sedan tidigare', key: 'mortageBond' },
+      { name: 'Storlek handpenning (minst 15%)', defaultValue: '15', key: 'depositPercentage' },
     ]
   },
   {
     title: 'Ekonomi',
     fields: [
-      { name: 'Storlek handpenning (minst 15%)', defaultValue: '15', key: 'depositPercentage' },
       { name: 'Amortering (%)', key: 'amortizement' },
       { name: 'Ränta på första 2 miljonerna (%)', key: 'interest1' },
       { name: 'Ränta på resten (%)', key: 'interest2' },
@@ -81,12 +80,13 @@ interface SalesCalculations {
 interface BuyCalculations {
   availableAfterSale: number
   deposit: number
-  neededAfterSale: number
   deedCost: number
-  needToLoan: number
+  loan: number
+  maxLoan: number
   mortageBondCost: number
   cashInput: number
   minimumExtraCash: number
+  cashRemaining: number
 }
 
 interface Expenses {
@@ -138,16 +138,16 @@ const Calculator = (): JSX.Element => {
   let buyCalculations = {} as BuyCalculations
   buyCalculations.availableAfterSale = salesCalculations.remainingAfterTaxes + salesCalculations.paidOnCurrentProperty
   buyCalculations.deposit = Math.round(settings.buyPrice * (settings.depositPercentage ?? 15) / 100.0)
-  buyCalculations.neededAfterSale = settings.buyPrice - buyCalculations.availableAfterSale
   buyCalculations.deedCost = settings.propertyType === "Villa" ? settings.buyPrice * 0.015 + 875 : 0
-  buyCalculations.needToLoan = buyCalculations.neededAfterSale - settings.extraCash
-  buyCalculations.mortageBondCost = settings.propertyType === "Villa" ? Math.max(Math.round((buyCalculations.needToLoan - settings.mortageBond) * 0.02), 0) : 0
+  buyCalculations.loan = settings.buyPrice - buyCalculations.deposit
+  buyCalculations.mortageBondCost = settings.propertyType === "Villa" ? Math.max(Math.round((buyCalculations.loan - settings.mortageBond) * 0.02), 0) : 0
   buyCalculations.cashInput = buyCalculations.deposit + buyCalculations.deedCost + buyCalculations.mortageBondCost
   buyCalculations.minimumExtraCash = Math.max(buyCalculations.cashInput - buyCalculations.availableAfterSale, 0)
+  buyCalculations.cashRemaining = buyCalculations.availableAfterSale - buyCalculations.cashInput > 0 ? buyCalculations.availableAfterSale - buyCalculations.cashInput : 0
 
   let expenses = {} as Expenses
-  expenses.interest = Math.round((Math.min(buyCalculations.needToLoan, 2000000) * settings.interest1 / 100.0 + Math.max(buyCalculations.needToLoan - 2000000, 0) * settings.interest2 / 100.0) / 12)
-  expenses.amortizement = Math.round(buyCalculations.needToLoan * settings.amortizement / 100.0 / 12)
+  expenses.interest = Math.round((Math.min(buyCalculations.loan, 2000000) * settings.interest1 / 100.0 + Math.max(buyCalculations.loan - 2000000, 0) * settings.interest2 / 100.0) / 12)
+  expenses.amortizement = Math.round(buyCalculations.loan * settings.amortizement / 100.0 / 12)
   expenses.rent = settings.costRent * 1
   expenses.insurance = settings.costInsurance * 1
   expenses.electricity = settings.costElectricity * 1
@@ -201,13 +201,15 @@ const Calculator = (): JSX.Element => {
                 <Paper sx={{ p: 2 }}>
                   <ResultTableVertical headerRow={[
                     "Tillgängligt efter försäljning",
-                    "Behöver minst låna",
+                    "Storlek på lånet",
                     "Extra kontanter att skjuta till (utöver vinst)",
+                    "Kontanter över",
                     "Utgifter per månad",
                   ]} tableData={[[
                     buyCalculations.availableAfterSale,
-                    buyCalculations.needToLoan,
+                    buyCalculations.loan,
                     buyCalculations.minimumExtraCash,
+                    buyCalculations.cashRemaining,
                     `${expenses.totalMonthly} (${numberWithSign(calculations.expenseDifference.totalMonthly)})`,
                   ]]} />
                 </Paper>
@@ -246,18 +248,16 @@ const Calculator = (): JSX.Element => {
                   <ResultTableVertical headerRow={[
                     "Tillgängligt efter försäljning",
                     `Handpenning (${Math.round(settings.depositPercentage ?? 15)}%)`,
-                    "Behöver skjuta till / låna efter försäljning",
                     "Lagfart (1.5% + 875 kr)",
-                    "Behöver minst låna",
+                    "Storlek på lånet",
                     "Pantbrev (2% av nylån)",
                     "Behov kontanter (handpenning + lagfart + pantbrev)",
                     "Minst extra kontanter att skjuta till utöver försäljningsvinst",
                   ]} tableData={[[
                     buyCalculations.availableAfterSale,
                     buyCalculations.deposit,
-                    buyCalculations.neededAfterSale,
                     buyCalculations.deedCost,
-                    buyCalculations.needToLoan,
+                    buyCalculations.loan,
                     buyCalculations.mortageBondCost,
                     buyCalculations.cashInput,
                     buyCalculations.minimumExtraCash,
